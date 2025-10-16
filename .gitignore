@@ -1,0 +1,17 @@
+*.fits
+*.csv
+.venv
+__pycache__/
+plsim.egg-info
+.DS_Store
+*.hdf5
+*.npy
+.vscode
+*.pdf
+*.pkl
+*.npz
+*.tiff
+*.png
+*.shm
+.ipynb_checkpoints
+.git_depr

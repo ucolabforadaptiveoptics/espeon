@@ -1,0 +1,10 @@
+ipython
+ipykernel
+numpy
+scipy
+matplotlib
+hcipy
+tqdm
+h5py
+jupyter
+ipywidgets
