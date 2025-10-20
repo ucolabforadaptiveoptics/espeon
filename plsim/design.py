@@ -97,7 +97,7 @@ def save_lantern_design(
 	port_positions, 
 	core_radius_um, cladding_radius_um, z_extent_um, scale,
 	n_clad, n_core, n_jacket, 
-	wavelength_um,
+	wavelengths_um,
 	design_core_radius_um=None,
 	simulation_params = {
 		"name" : "lightbeam",
@@ -148,29 +148,35 @@ def save_lantern_design(
 	if isinstance(core_radius_um, float):
 		core_radius_um = [core_radius_um for _ in range(port_positions.shape[0])]
 
+	if isinstance(wavelengths_um, float):
+		wavelengths_um = [wavelengths_um]
+
 	filepath = path.join(PROJECT_ROOT, "pl_designs", design_name + ".hdf5")
 	if not force_overwrite and path.exists(filepath):
 		raise OSError(f"File already exists at {filepath}, change design_name or force overwrite by passing in force_overwrite=True")
 	# setup for lightbeam
 	PML = simulation_params["PML"]
-	lbprop, input_footprint, extent, launch_fields = setup_lantern(
-		port_positions, core_radius_um, cladding_radius_um, z_extent_um, scale, n_clad, n_core, n_jacket, wavelength_um, simulation_params
-	)
 	pl_output = []
-	# the backwards beam-propagation runs
-	for (i, lf) in enumerate(launch_fields):
-		print(f"Illuminating core {i}")
-		if do_plot:
-			plt.imshow(np.abs(lf) ** 2)
-			plt.show()
-		u = lbprop.prop2end(lf)[PML:-PML,PML:-PML] # this step takes ~minutes
-		u = u[input_footprint]
-		u /= np.linalg.norm(u)
-		pl_output.append(u)
-		if do_plot:
-			output_intensity = np.abs(input_to_2d(u, input_footprint, extent)) ** 2
-			plt.imshow(output_intensity)
-			plt.show()
+	for wavelength_um in wavelengths_um:
+		lbprop, input_footprint, extent, launch_fields = setup_lantern(
+			port_positions, core_radius_um, cladding_radius_um, z_extent_um, scale, n_clad, n_core, n_jacket, wavelength_um, simulation_params
+		)
+		pl_output_this_wl = []
+		# the backwards beam-propagation runs
+		for (i, lf) in enumerate(launch_fields):
+			print(f"Illuminating core {i}")
+			if do_plot:
+				plt.imshow(np.abs(lf) ** 2)
+				plt.show()
+			u = lbprop.prop2end(lf)[PML:-PML,PML:-PML] # this step takes ~minutes
+			u = u[input_footprint]
+			u /= np.linalg.norm(u)
+			pl_output_this_wl.append(u)
+			if do_plot:
+				output_intensity = np.abs(input_to_2d(u, input_footprint, extent)) ** 2
+				plt.imshow(output_intensity)
+				plt.show()
+		pl_output.append(pl_output_this_wl)
 
 	# write output to hdf5
 	with h5py.File(filepath, "w") as f:
@@ -179,6 +185,7 @@ def save_lantern_design(
 			pl_output_dset.attrs[k] = eval(k)
 		for k in simulation_params:
 			pl_output_dset.attrs["sim_" + k] = simulation_params[k]
+		wavelengths_dset = f.create_dataset("wavelengths_um", data=wavelengths_um)
 		input_footprint_x_dset = f.create_dataset("input_footprint_x", data=input_footprint[0])
 		input_footprint_x_dset.attrs["xmin"] = extent[0][0]
 		input_footprint_x_dset.attrs["xmax"] = extent[0][1]
