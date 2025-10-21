@@ -1,5 +1,5 @@
 import numpy as np
-from plsim.design import save_lantern_design, ngon_pattern
+from espeon.design import save_lantern_design, ngon_pattern
 
 # Make the PL design from Aditya's 2024 SPIE paper (arxiv 2406.07771)
 

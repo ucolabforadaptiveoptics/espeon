@@ -1,11 +1,11 @@
 # Implementation of the PL in the style of hcipy's pyramid WFS.
 
 import h5py
+import hcipy
 import numpy as np
 import hcipy as hc
 from os import path
 from copy import copy
-from hcipy import imshow_field
 from matplotlib import pyplot as plt
 
 from .utils import input_to_2d, PL_DESIGNS_PATH
@@ -32,60 +32,69 @@ class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 		self.focal_grid = hc.CartesianGrid(hc.RegularCoords(delta, dims, zero))
 		# generate launch fields here
 
-	def generate_launch_fields(self):
+	def generate_launch_fields(self, scaleup=3):
 		# this is if you want the full-frame images
 		# requires lightbeam integration for the LP mode calculator
 		import lightbeam as lb
-		mesh = lb.RectMesh3D(
-			xw = self.attributes["sim_mesh_extent_um"],
-			yw = self.attributes["sim_mesh_extent_um"],
-			zw = self.attributes["z_extent_um"],
-			ds = self.attributes["sim_mesh_spacing_um"],
-			dz = self.attributes["sim_dz_um"],
-			PML = self.attributes["sim_PML"]
-		)
-		# This is probably overkill for a regularly spaced grid, but it'll do
-		xg, yg = mesh.grids_without_pml()
+		dx = self.attributes["sim_mesh_spacing_um"]
+		extent = self.attributes["sim_mesh_extent_um"]
+		n = int(extent // dx) + 1
+		coords = np.linspace(-extent / 2.0, extent / 2.0, n)
+		self.xg, self.yg = np.meshgrid(coords, coords, indexing='xy')
 
 		self.launch_fields = [
-			lb.normalize(lb.lpfield(xg-pos[0], yg-pos[1], 0, 1, corerad, np.median(self.wavelengths_um), self.attributes["n_core"], self.attributes["n_clad"]))
-			for (pos, corerad) in zip(self.attributes["port_positions"], self.attributes["core_radius_um"])
+			lb.normalize(lb.lpfield(self.xg-pos[0], self.yg-pos[1], 0, 1, corerad * scaleup, np.median(self.wavelengths_um), self.attributes["n_core"], self.attributes["n_clad"]))
+			for (pos, corerad) in zip(self.attributes["port_positions"] * self.attributes["scale"], self.attributes["core_radius_um"])
 		]
 		
-	def coeffs(self, focal_wavefront):
+	def coeffs(self, focal_wavefront: hcipy.Wavefront) -> np.ndarray:
 		"""
   		Takes in a PSF at the lantern entrance and returns the coefficients of a projection onto the lantern basis.
-		If you want the lantern reading from here, do np.abs(_) ** 2 on the output of this function.
+
+		Input: focal_wavefront (hcipy.Wavefront)
+		Output: coeffs (np.ndarray, length = self.nports)
 		"""
 		wf_wl_um = focal_wavefront.wavelength * 1e6
 		pl_run_index = np.argmin(np.abs(wf_wl_um - self.wavelengths_um))
 		pl_wl_um = self.wavelengths_um[pl_run_index]
 		assert np.abs(wf_wl_um - pl_wl_um) < 1e-3, f"PL simulation was run at a different wavelength than the input wavefront: closest PL simulation was at {pl_wl_um} microns vs. input at {wf_wl_um} microns."
 		profile_to_project = focal_wavefront.electric_field.shaped[self.input_footprint]
-		return self.projectors[pl_run_index] @ profile_to_project
+		return np.array(self.projectors[pl_run_index] @ profile_to_project)
 
-	def lantern_output(self, focal_wavefront):
+	def readout(self, focal_wavefront: hcipy.Wavefront) -> np.ndarray:
 		"""
-		Pairs the response of readout with the field of what the output looks like for plotting.
+		Returns the intensity per port of a PL in response to a PSF at the lantern entrance.
+
+		Input - focal_wavefront: hcipy.Wavefront
+		Output - readout: np.ndarray, shape = (self.nports,)
+		"""
+		return np.abs(self.coeffs(focal_wavefront) ** 2)
+
+	def image(self, focal_wavefront):
+		"""
+		Converts a PL readout into an image of the SMF end.
+
+		Input - focal_wavefront: hcipy.Wavefront
+		Output - image: np.ndarray, shape = self.xg.shape
 		"""
 		coeff_vals = self.coeffs(focal_wavefront)
 		lantern_reading = sum(c * lf for (c, lf) in zip(coeff_vals, self.launch_fields))
-		return coeff_vals, np.abs(lantern_reading) ** 2
+		return np.abs(lantern_reading) ** 2
 		
-	def show_lantern_output(self, focal_wavefront):
-		coeffs, lantern_reading = self.lantern_output(focal_wavefront)
+	def show_image(self, focal_wavefront):
+		img = self.image(focal_wavefront)
 		fig, axs = plt.subplots(1, 2)
 		fig.subplots_adjust(top=1.4, bottom=0.0)
 		for ax in axs:
 			ax.set_xticks([])
 			ax.set_yticks([])
-		imshow_field(np.log10(focal_wavefront.intensity), ax=axs[0])
+		hcipy.imshow_field(np.log10(focal_wavefront.intensity), ax=axs[0])
 		axs[0].set_title("Lantern input")
-		axs[1].imshow(np.abs(lantern_reading))
+		axs[1].imshow(np.abs(img))
 		axs[1].set_title("Lantern output")
 		plt.show()
 
-	def show_lantern_modes(self, wl_index=0, nrows=4, crop=1):
+	def show_modes(self, wl_index=0, nrows=4, crop=1):
 		rm, cm = nrows, int(np.ceil(self.nports / nrows))
 		fig, axs = plt.subplots(rm, cm)
 		plt.suptitle(f"Photonic lantern entrance modes, {self.design_name}, wavelength = {self.wavelengths_um[wl_index]} microns")
@@ -98,4 +107,4 @@ class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 		for i in range(self.nports, rm * cm):
 			r, c = i // cm, i % cm
 			fig.delaxes(axs[r][c])
-		# plt.show()
+		plt.show()

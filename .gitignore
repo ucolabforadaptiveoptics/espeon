@@ -2,7 +2,7 @@
 *.csv
 .venv
 __pycache__/
-plsim.egg-info
+espeon.egg-info
 .DS_Store
 *.hdf5
 *.npy
