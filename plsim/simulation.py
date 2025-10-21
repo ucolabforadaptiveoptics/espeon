@@ -4,6 +4,7 @@ import h5py
 import numpy as np
 import hcipy as hc
 from os import path
+from copy import copy
 from hcipy import imshow_field
 from matplotlib import pyplot as plt
 
@@ -17,19 +18,39 @@ class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 		path_to_pl = path.join(PL_DESIGNS_PATH, f"{tag}.hdf5")
 		with h5py.File(path_to_pl) as f:
 			self.output = np.array(f["pl_output"])
+			att = f["pl_output"].attrs
+			self.attributes = {k: att[k] for k in att}
+			self.design_name = self.attributes["design_name"]
 			self.wavelengths_um = np.array(f["wavelengths_um"])
-			self.design_name = f["pl_output"].attrs["design_name"]
-			mesh_spacing_um = f["pl_output"].attrs["sim_mesh_spacing_um"]
-			mesh_extent_um = f["pl_output"].attrs["sim_mesh_extent_um"]
 			self.input_footprint = (np.array(f["input_footprint_x"]), np.array(f["input_footprint_y"]))
 			self.extent = [[f[f"input_footprint_{l}"].attrs[f"{l}min"], f[f"input_footprint_{l}"].attrs[f"{l}max"]] for l in ["x", "y"]]
 		self.nports = self.output.shape[1]
 		self.projectors = [np.linalg.pinv(self.output[i,:,:].T) for i in range(self.output.shape[0])]
-		delta = mesh_spacing_um * 1e-6 * np.ones(2)
-		dims = (mesh_extent_um // mesh_spacing_um + 1) * np.ones(2)
+		delta = self.attributes["sim_mesh_spacing_um"] * 1e-6 * np.ones(2)
+		dims = (self.attributes["sim_mesh_extent_um"] // self.attributes["sim_mesh_spacing_um"] + 1) * np.ones(2)
 		zero = delta * (-dims / 2 + np.mod(dims, 2) * 0.5)
 		self.focal_grid = hc.CartesianGrid(hc.RegularCoords(delta, dims, zero))
 		# generate launch fields here
+
+	def generate_launch_fields(self):
+		# this is if you want the full-frame images
+		# requires lightbeam integration for the LP mode calculator
+		import lightbeam as lb
+		mesh = lb.RectMesh3D(
+			xw = self.attributes["sim_mesh_extent_um"],
+			yw = self.attributes["sim_mesh_extent_um"],
+			zw = self.attributes["z_extent_um"],
+			ds = self.attributes["sim_mesh_spacing_um"],
+			dz = self.attributes["sim_dz_um"],
+			PML = self.attributes["sim_PML"]
+		)
+		# This is probably overkill for a regularly spaced grid, but it'll do
+		xg, yg = mesh.grids_without_pml()
+
+		self.launch_fields = [
+			lb.normalize(lb.lpfield(xg-pos[0], yg-pos[1], 0, 1, corerad, np.median(self.wavelengths_um), self.attributes["n_core"], self.attributes["n_clad"]))
+			for (pos, corerad) in zip(self.attributes["port_positions"], self.attributes["core_radius_um"])
+		]
 		
 	def coeffs(self, focal_wavefront):
 		"""
@@ -47,18 +68,18 @@ class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 		"""
 		Pairs the response of readout with the field of what the output looks like for plotting.
 		"""
-		coeff_vals = self.coeffs(focal_field)
+		coeff_vals = self.coeffs(focal_wavefront)
 		lantern_reading = sum(c * lf for (c, lf) in zip(coeff_vals, self.launch_fields))
 		return coeff_vals, np.abs(lantern_reading) ** 2
 		
 	def show_lantern_output(self, focal_wavefront):
-		coeffs, lantern_reading = self.plotting_lantern_output(focal_wavefront)
+		coeffs, lantern_reading = self.lantern_output(focal_wavefront)
 		fig, axs = plt.subplots(1, 2)
 		fig.subplots_adjust(top=1.4, bottom=0.0)
 		for ax in axs:
 			ax.set_xticks([])
 			ax.set_yticks([])
-		imshow_field(np.log10(focal_field.intensity), ax=axs[0])
+		imshow_field(np.log10(focal_wavefront.intensity), ax=axs[0])
 		axs[0].set_title("Lantern input")
 		axs[1].imshow(np.abs(lantern_reading))
 		axs[1].set_title("Lantern output")

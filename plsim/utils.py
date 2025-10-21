@@ -56,8 +56,3 @@ def input_to_2d(input_efield, input_footprint, extent):
 	input_efield_2d[input_footprint[0] - xm, input_footprint[1] - ym] = input_efield
 	return input_efield_2d
 
-def normalize(x):
-    x = np.maximum(x, 0.0)
-    if np.all(x == 0.0):
-        return x
-    return x / np.sum(x)

@@ -181,7 +181,7 @@ def save_lantern_design(
 	# write output to hdf5
 	with h5py.File(filepath, "w") as f:
 		pl_output_dset = f.create_dataset("pl_output", data=pl_output)
-		for k in ["design_name", "port_positions", "core_radius_um", "cladding_radius_um", "z_extent_um", "scale", "n_core", "n_clad", "n_jacket", "wavelength_um"]:
+		for k in ["design_name", "port_positions", "core_radius_um", "cladding_radius_um", "z_extent_um", "scale", "n_core", "n_clad", "n_jacket"]:
 			pl_output_dset.attrs[k] = eval(k)
 		for k in simulation_params:
 			pl_output_dset.attrs["sim_" + k] = simulation_params[k]
