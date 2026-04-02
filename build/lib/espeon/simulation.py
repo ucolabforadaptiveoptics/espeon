@@ -8,26 +8,20 @@ from os import path
 from copy import copy
 from matplotlib import pyplot as plt
 
-from .utils import input_to_2d, PL_DESIGNS_PATH, normalize
+from .utils import input_to_2d, PL_DESIGNS_PATH
 
 class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 	"""
 	The optical elements for a simulated photonic lantern. This mostly consists of accurately defining grids that are compatible with the simulation that's been run.
 	"""
-	def __init__(self, tag, despath=None, wavelength_um=None):
-		if despath is None:
-			despath = PL_DESIGNS_PATH
-		path_to_pl = path.join(despath, f"{tag}.hdf5")
+	def __init__(self, tag):
+		path_to_pl = path.join(PL_DESIGNS_PATH, f"{tag}.hdf5")
 		with h5py.File(path_to_pl) as f:
 			self.output = np.array(f["pl_output"])
 			att = f["pl_output"].attrs
 			self.attributes = {k: att[k] for k in att}
 			self.design_name = self.attributes["design_name"]
-			try:
-				self.wavelengths_um = np.array(f["wavelengths_um"])
-			except KeyError:
-				self.wavelengths_um = np.array([wavelength_um])
-				self.output = np.array([self.output])
+			self.wavelengths_um = np.array(f["wavelengths_um"])
 			self.input_footprint = (np.array(f["input_footprint_x"]), np.array(f["input_footprint_y"]))
 			self.extent = [[f[f"input_footprint_{l}"].attrs[f"{l}min"], f[f"input_footprint_{l}"].attrs[f"{l}max"]] for l in ["x", "y"]]
 		self.nports = self.output.shape[1]
@@ -38,7 +32,7 @@ class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 		self.focal_grid = hc.CartesianGrid(hc.RegularCoords(delta, dims, zero))
 		# generate launch fields here
 
-	def generate_launch_fields(self, scaleup=1):
+	def generate_launch_fields(self, scaleup=3):
 		# this is if you want the full-frame images
 		# requires lightbeam integration for the LP mode calculator
 		import lightbeam as lb
@@ -49,7 +43,7 @@ class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 		self.xg, self.yg = np.meshgrid(coords, coords, indexing='xy')
 
 		self.launch_fields = [
-			np.real(normalize(lb.lpfield(self.xg-pos[0], self.yg-pos[1], 0, 1, corerad * scaleup, np.median(self.wavelengths_um), self.attributes["n_core"], self.attributes["n_clad"])))
+			lb.normalize(lb.lpfield(self.xg-pos[0], self.yg-pos[1], 0, 1, corerad * scaleup, np.median(self.wavelengths_um), self.attributes["n_core"], self.attributes["n_clad"]))
 			for (pos, corerad) in zip(self.attributes["port_positions"] * self.attributes["scale"], self.attributes["core_radius_um"])
 		]
 		
@@ -74,7 +68,7 @@ class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 		Input - focal_wavefront: hcipy.Wavefront
 		Output - readout: np.ndarray, shape = (self.nports,)
 		"""
-		return np.abs(self.coeffs(focal_wavefront) ** 2) * self.focal_grid.weights
+		return np.abs(self.coeffs(focal_wavefront) ** 2)
 
 	def image(self, focal_wavefront):
 		"""
@@ -83,9 +77,9 @@ class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 		Input - focal_wavefront: hcipy.Wavefront
 		Output - image: np.ndarray, shape = self.xg.shape
 		"""
-		readout_vals = self.readout(focal_wavefront)
-		lantern_reading = sum([c * lf for (c, lf) in zip(readout_vals, self.launch_fields)])
-		return lantern_reading
+		coeff_vals = self.coeffs(focal_wavefront)
+		lantern_reading = sum(c * lf for (c, lf) in zip(coeff_vals, self.launch_fields))
+		return np.abs(lantern_reading) ** 2
 		
 	def show_image(self, focal_wavefront):
 		img = self.image(focal_wavefront)
