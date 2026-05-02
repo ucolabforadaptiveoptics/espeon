@@ -100,14 +100,14 @@ class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 		axs[1].set_title("Lantern output")
 		plt.show()
 
-	def show_modes(self, wl_index=0, nrows=4, crop=1):
+	def show_modes(self, wl_index=0, nrows=4, crop=1, fn=np.abs):
 		rm, cm = nrows, int(np.ceil(self.nports / nrows))
 		fig, axs = plt.subplots(rm, cm)
 		plt.suptitle(f"Photonic lantern entrance modes, {self.design_name}, wavelength = {self.wavelengths_um[wl_index]} microns")
 		plt.subplots_adjust(wspace=0.05, hspace=0.05)
 		for (i, o) in enumerate(self.output[wl_index,:,:]):
 			r, c = i // cm, i % cm
-			axs[r][c].imshow(np.abs(input_to_2d(o, self.input_footprint, self.extent))[crop:-crop,crop:-crop])
+			axs[r][c].imshow(fn(input_to_2d(o, self.input_footprint, self.extent))[crop:-crop,crop:-crop])
 			axs[r][c].set_xticks([])
 			axs[r][c].set_yticks([])
 		for i in range(self.nports, rm * cm):

@@ -42,12 +42,12 @@ for (tag, pos) in zip(["symmetric", "asymmetric"], [port_positions_asymmetric, p
         core_radius_um=6.5/2, cladding_radius_um=15.64, z_extent_um=10_000, scale=633.6/(15.64*2),
         n_clad=1.44692, n_core=1.45213, n_jacket=1.441, 
         wavelengths_um=wavelengths_nm/1e3,
-        do_plot=False,
+        do_plot=True,
         force_overwrite=True,
         simulation_params = {
             "name" : "lightbeam",
             "mesh_extent_um" : 700,
-            "mesh_spacing_um" : 1,
+            "mesh_spacing_um" : 0.25,
             "dz_um" : 50,
             "PML" : 8
         }
