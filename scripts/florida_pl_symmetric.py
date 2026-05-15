@@ -12,7 +12,7 @@ from itertools import product
 
 pos = ngon_pattern(6, 3, 6.5) # 125um overall = 116um 4x core to core = 29um core to core at the output = 5.568um at the MMF end
 
-for (mesh_spacing, dz) in product([1.0, 0.7, 0.5, 0.2], [200, 100, 50, 20, 10]):
+for (mesh_spacing, dz) in product([1.0, 0.7, 0.5, 0.2], [50, 20, 10]):
     save_lantern_design(
         f"florida_test_{mesh_spacing=}_{dz=}", 
         port_positions=pos, 
