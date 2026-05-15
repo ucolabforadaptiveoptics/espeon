@@ -162,14 +162,21 @@ def save_lantern_design(
 		lbprop, input_footprint, extent, launch_fields = setup_lantern(
 			port_positions, core_radius_um, cladding_radius_um, z_extent_um, scale, n_clad, n_core, n_jacket, wavelength_um, simulation_params
 		)
+
+		xg, _ = lbprop.mesh.grids_without_pml()
+		out_start, out_end = np.zeros_like(xg), np.zeros_like(xg)
+		fig, axs = plt.subplots(1, 2, figsize=(8, 4))
+		lbprop.optical_system.set_IORsq(out_start, 0)
+		axs[0].imshow(out_start, vmin=n_jacket**2, vmax=n_core**2)
+		lbprop.optical_system.set_IORsq(out_end, z_extent_um)
+		axs[1].imshow(out_end, vmin=n_jacket**2, vmax=n_core**2)
+		plt.show()
+
 		pl_output_this_wl = []
 		total_power_this_wl = []
 		# the backwards beam-propagation runs
 		for (i, lf) in enumerate(launch_fields):
 			print(f"Illuminating core {i}")
-			if do_plot:
-				plt.imshow(np.abs(lf) ** 2)
-				plt.show()
 			u, final_totalpower = lbprop.prop2end(lf) # this step takes ~minutes
 			u = u[PML:-PML,PML:-PML]
 			u = u[input_footprint]

@@ -20,6 +20,8 @@ class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 		path_to_pl = path.join(despath, f"{tag}.hdf5")
 		with h5py.File(path_to_pl) as f:
 			self.output = np.array(f["pl_output"])
+			if "total_power" in f.keys():
+				self.total_power = np.array(f["total_power"])
 			att = f["pl_output"].attrs
 			self.attributes = {k: att[k] for k in att}
 			self.design_name = self.attributes["design_name"]
