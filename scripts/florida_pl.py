@@ -14,7 +14,7 @@ from espeon.design import save_lantern_design, ngon_pattern
 port_positions_asymmetric = np.load("/Users/adityasengupta/projects/umbreon/data/florida_pl_microscope/florida_asymmetric_centroids.npy")
 port_positions_symmetric = ngon_pattern(6, 3, 6.256)
 
-wavelengths_nm = np.array([1507.56260406, 1508.58426467, 1509.60401389, 1510.62181916,
+"""wavelengths_nm = np.array([1507.56260406, 1508.58426467, 1509.60401389, 1510.62181916,
        1511.63769679, 1512.65166293, 1513.66368522, 1514.67377986,
        1515.68196292, 1516.68820222, 1517.69251387, 1518.69491386,
        1519.69537018, 1520.69389884, 1521.69051575, 1522.68518908,
@@ -33,7 +33,7 @@ wavelengths_nm = np.array([1507.56260406, 1508.58426467, 1509.60401389, 1510.621
        1569.0630387 , 1569.96132896, 1570.85770585, 1571.75214078,
        1572.64464805, 1573.53524186, 1574.4238938 , 1575.31061808,
        1576.19542882, 1577.07829777, 1577.95923907, 1578.83826673,
-       1579.7153527 , 1580.59051101])
+       1579.7153527 , 1580.59051101])"""
 
 for (tag, pos) in zip(["symmetric", "asymmetric"], [port_positions_asymmetric, port_positions_symmetric]):
     save_lantern_design(
