@@ -116,3 +116,6 @@ class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 			r, c = i // cm, i % cm
 			fig.delaxes(axs[r][c])
 		plt.show()
+
+	def V(self, wl_um):
+		return 2 * np.pi / wl_um * self.attributes["cladding_radius_um"] * np.sqrt(self.attributes["n_clad"] ** 2 - self.attributes["n_jacket"] ** 2)

@@ -10,25 +10,24 @@ import numpy as np
 from espeon.design import save_lantern_design, ngon_pattern
 from itertools import product
 
-pos = ngon_pattern(6, 3, 6.5) # 125um overall = 116um 4x core to core = 29um core to core at the output = 5.568um at the MMF end
+pos = ngon_pattern(6, 3, 4.8)
 
-for (mesh_spacing, dz) in product([1.0, 0.7, 0.5, 0.2], [50, 20, 10]):
-    save_lantern_design(
-        f"florida_test_{mesh_spacing=}_{dz=}", 
-        port_positions=pos, 
-        core_radius_um=9/2, cladding_radius_um=24, z_extent_um=50000, scale=125/24,
-        n_clad=1.44692, n_core=1.45213, n_jacket=1.441, 
-        wavelengths_um=[1.55],
-        do_plot=True,
-        force_overwrite=True,
-        simulation_params = {
-            "name" : "lightbeam",
-            "mesh_extent_um" : 700,
-            "mesh_spacing_um" : mesh_spacing,
-            "dz_um" : dz,
-            "PML" : 8
-        }
-    )
+save_lantern_design(
+    f"florida_test_vnumbermatch", 
+    port_positions=pos, 
+    core_radius_um=9/2, cladding_radius_um=12, z_extent_um=50000, scale=625/24,
+    n_clad=1.44692, n_core=1.45213, n_jacket=1.441, 
+    wavelengths_um=[1.55],
+    do_plot=True,
+    force_overwrite=True,
+    simulation_params = {
+        "name" : "lightbeam",
+        "mesh_extent_um" : 700,
+        "mesh_spacing_um" : 1.0,
+        "dz_um" : 50,
+        "PML" : 8
+    }
+)
 
 # %%
 """from espeon.simulation import PhotonicLanternOptics

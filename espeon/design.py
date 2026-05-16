@@ -163,7 +163,7 @@ def save_lantern_design(
 			port_positions, core_radius_um, cladding_radius_um, z_extent_um, scale, n_clad, n_core, n_jacket, wavelength_um, simulation_params
 		)
 
-		xg, _ = lbprop.mesh.grids_without_pml()
+		xg = lbprop.mesh.xg
 		out_start, out_end = np.zeros_like(xg), np.zeros_like(xg)
 		fig, axs = plt.subplots(1, 2, figsize=(8, 4))
 		lbprop.optical_system.set_IORsq(out_start, 0)
