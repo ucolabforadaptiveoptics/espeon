@@ -1,0 +1,2 @@
+-r requirements.txt
+cbeam @ git+https://github.com/jw-lin/cbeam.git

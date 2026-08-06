@@ -6,5 +6,19 @@ This package allows you to simulate new photonic lanterns using lightbeam (setti
 
 For practical reasons I've gotten rid of the git history in this repo - if you need anything in there it's under `umbreon`. This is mostly the same as the earlier version of this package, `plsim`, but with multiple wavelengths in a single file and with much smaller files, as I'm no longer saving full-frame images of the single-mode end.
 
-This package is pip installable with `pip install git+https://github.com/ucolabforadaptiveoptics/espeon`. Requirements for only getting intensities per port as a function of the PSF are in `requirements.txt`. Full-frame images additionally require `lightbeam`, for which the requirements are in `requirements_lb.txt`.
+Install the core package with:
 
+```sh
+pip install git+https://github.com/ucolabforadaptiveoptics/espeon
+```
+
+Install only the simulation backend you need:
+
+```sh
+pip install "espeon[lightbeam] @ git+https://github.com/ucolabforadaptiveoptics/espeon"
+pip install "espeon[cbeam] @ git+https://github.com/ucolabforadaptiveoptics/espeon"
+```
+
+For a source checkout, the equivalent requirement files are `requirements_lb.txt` and `requirements_cbeam.txt`. Backend imports are lazy, so Lightbeam and CBeam do not need to be installed together.
+
+This repo includes code generated with GPT-5.6 Sol via Codex. My procedure for validating the outputs of AI-generated code is available upon request and the prompts used are under `prompts/`.

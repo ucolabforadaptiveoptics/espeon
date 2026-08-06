@@ -21,7 +21,7 @@ def f_numcont(aberration):
     pl_readout = pl.readout(focal_wf)
     return pl_readout / np.sum(pl_readout)
 
-f_numcont([0.0, 0.2])
+f_numcont([0.0, 0.0])
 # %%
 root(lambda x: f_numcont(x) - np.array([0.25, 0.25, 0.5]), x0=[-1,-1], method='lm')
 # %%

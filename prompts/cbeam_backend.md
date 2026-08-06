@@ -1,0 +1,5 @@
+I've started the function `save_lantern_design_cbeam` but have left it at the point where it returns transfer matrices. Look at `save_lantern_design`'s HDF5 file structure and extend `save_lantern_design_cbeam` analogously. 
+Then update simulation.py so that it supports both backends; make internal helper classes for the backends so that the `PhotonicLanternOptics` class doesn't have to have if/else-s for the two backends in every function. The user should be able to use the existing API regardless of which simulation method was used, just by entering a tag.
+`save_lantern_design_cbeam` possibly has a bug in the order of matrix multiplications near the end, so check for correctness using the Kim 6-port lantern using both lightbeam and cbeam.
+cbeam also requires projecting the input E field onto the LP modes. Use hcipy's in-built function for this.
+Change code minimally and don't add extensive comments.

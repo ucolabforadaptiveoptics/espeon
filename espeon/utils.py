@@ -58,3 +58,39 @@ def input_to_2d(input_efield, input_footprint, extent):
 
 def normalize(x):
     return x / np.sum(x)
+
+def triangle_pattern(core_offset):
+	theta = np.array([0, 2 * np.pi / 3, 4 * np.pi / 3])
+	return core_offset * np.vstack((np.cos(theta), np.sin(theta))).T
+
+def ngon_pattern(n, nrings, core_offset, theta_init=0):
+	"""
+	Generate an n-gon pattern of PL port positions. The pattern starts with a single port at the center and expands outward in concentric 
+ rings.
+
+	Args:
+		n (int): the number of sides of the n-gon.
+		nrings (int): The number of concentric hexagonal rings to generate. The total number of ports increases with the number of rings.
+		core_offset (float): The distance between adjacent rings in the hexagonal pattern.
+
+	Returns:
+		numpy.ndarray: A 2D array of shape (nports, 2), where `nports` is the total number of ports. Each row represents the (x, y) coordinates of a port in the hexan-gongonal pattern.
+	"""
+	theta_step = 2 * np.pi / n
+	nports = int(1 + (n / 2) * nrings * (nrings - 1))
+	port_positions = np.zeros((nports, 2))
+	nports_so_far = 0
+	for i in range(nrings):
+		nports_per_ring = max(1, n*i)
+		theta = theta_init
+		current_position = i * core_offset * np.array([np.cos(theta), np.sin(theta)])
+		next_position = i * core_offset * np.array([np.cos(theta + theta_step), np.sin(theta + theta_step)])
+		for j in range(nports_per_ring):
+			if i > 0 and j % i == 0:
+				theta += theta_step
+				current_position = next_position
+				next_position = i * core_offset * np.array([np.cos(theta + theta_step), np.sin(theta + theta_step)])
+			cvx_coeff = 0 if i == 0 else (j % i) / i
+			port_positions[nports_so_far,:] = (1 - cvx_coeff) * current_position + cvx_coeff * next_position
+			nports_so_far += 1
+	return port_positions

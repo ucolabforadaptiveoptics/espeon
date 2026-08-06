@@ -20,6 +20,8 @@ class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 		path_to_pl = path.join(despath, f"{tag}.hdf5")
 		with h5py.File(path_to_pl) as f:
 			self.output = np.array(f["pl_output"])
+			if "total_power" in f.keys():
+				self.total_power = np.array(f["total_power"])
 			att = f["pl_output"].attrs
 			self.attributes = {k: att[k] for k in att}
 			self.design_name = self.attributes["design_name"]
@@ -100,17 +102,19 @@ class PhotonicLanternOptics(hc.wavefront_sensing.WavefrontSensorOptics):
 		axs[1].set_title("Lantern output")
 		plt.show()
 
-	def show_modes(self, wl_index=0, nrows=4, crop=1):
+	def show_modes(self, wl_index=0, nrows=4, crop=1, fn=np.abs):
 		rm, cm = nrows, int(np.ceil(self.nports / nrows))
 		fig, axs = plt.subplots(rm, cm)
-		plt.suptitle(f"Photonic lantern entrance modes, {self.design_name}, wavelength = {self.wavelengths_um[wl_index]} microns")
+		# plt.suptitle(f"Photonic lantern entrance modes, {self.design_name}, wavelength = {self.wavelengths_um[wl_index]} microns")
 		plt.subplots_adjust(wspace=0.05, hspace=0.05)
 		for (i, o) in enumerate(self.output[wl_index,:,:]):
 			r, c = i // cm, i % cm
-			axs[r][c].imshow(np.abs(input_to_2d(o, self.input_footprint, self.extent))[crop:-crop,crop:-crop])
+			axs[r][c].imshow(fn(input_to_2d(o, self.input_footprint, self.extent))[crop:-crop,crop:-crop])
 			axs[r][c].set_xticks([])
 			axs[r][c].set_yticks([])
 		for i in range(self.nports, rm * cm):
 			r, c = i // cm, i % cm
 			fig.delaxes(axs[r][c])
-		plt.show()
+
+	def V(self, wl_um):
+		return 2 * np.pi / wl_um * self.attributes["cladding_radius_um"] * np.sqrt(self.attributes["n_clad"] ** 2 - self.attributes["n_jacket"] ** 2)

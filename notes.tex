@@ -1,0 +1,22 @@
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{custom}
+
+\title{\textit{espeon} notes}
+\author{Aditya Sengupta}
+
+\begin{document}
+    \maketitle
+
+    I should put this in as a dissertation chapter because I don't think Jon or Yoo Jung have anything like it.
+
+    \textit{espeon} is essentially a call to \textit{lightbeam} that sets up the lantern geometry based on easily parseable parameters. It uses the positions of the ports, refractive index, taper length and taper factor and sets up an \textit{hcipy} grid for the multimode end matching the \textit{lightbeam} mesh in spacing and extent. The mesh is uniform, so it has to be finely spaced enough on the multimode end to resolve structure there and large enough to include the whole single-mode end. Critically, it runs in reverse, where $z = 0$ is the single-mode end and $z = z_{\text{ex}}$ is the multimode end. It then does one beam-propagation run per port, by putting the fundamental mode into each single-mode port and computing the corresponding multimode pattern. An \textit{hcipy} simulation that uses this lantern works by projecting the input electric field in the focal plane onto this basis of modes. The intensity at port $i$ is the norm-squared of the projection coefficient corresponding to mode $i$.
+
+    \textit{lightbeam} reports the single-mode to multi-mode power (i.e. if the power at the single-mode end is 1, what's the power at the multi-mode end). This power should also approach 1 if we have a `well-designed' lantern simulated at sufficient resolution. \textit{lightbeam} runs can take hours if we run at these resolutions (about 0.05-01$\mu$m $x$/$y$ spacing and 10$\mu$m $z$ spacing, but that's just rough and memory-based), so at laptop-scale parameters where it takes 30s to a minute per port, we get about 0.8-0.85 and that's sufficient (in the sense that the projection coefficients don't change very much). I have runs somewhere, maybe on threadripper, of the same lantern design at a bunch of different resolutions, and even if the power in each mode is different, the total power when going in the `forward' direction stays the same, which would suggest we're normalizing based on the assumption that the single-mode to multi-mode conversion is perfect. Yeah, in fact I do this in \textit{espeon}, rather than within \textit{lightbeam}: the line is \texttt{u /= np.linalg.norm(u)}.
+
+    How do we know if a lantern design is good? We've certainly done a bunch of runs that are bad or inconsistent. Sometimes I've tried going in the forward direction again, i.e. re-launching the identified mode and seeing if it only couples into the one single-mode port. I think I figured out the correct parameters for the Kim 6-port lantern by doing this.
+
+    One more thing is the correct sizing of the multimode end - the port positions should be such that the peak f-number matches up with $1/(2 \times \text[NA])$. NA is dependent only on the refractive indices. So I don't really know why this has to be true in a physical sense. I have half a theory, but I need to do more reading/math/mode simulations. The half theory is: the principal mode shapes that are the best are the ones that map onto the LPs the best/without loss. That's what would make the transfer matrix unitary. The LPs are defined as a function of the multimode end profile (i.e. radii and refractive indices of the core and cladding), which is also sort of the case for the principal modes calculated by \textit{lightbeam}.
+
+    I think for full validation, we need to match this up to \textit{cbeam}, which we haven't done to my satisfaction yet. I'd also like \textit{espeon} to be able to handle PICs, I've asked Avi to do that.
+\end{document}

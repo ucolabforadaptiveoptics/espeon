@@ -14,14 +14,14 @@ p = pa_radius_um = 5.22 / 2
 core_radii_livermore_b = [j, p, m, p, m, p, m, m, j, p, j, m, j, p, j, m, j, p, j]
 
 save_lantern_design(
-    design_name="livermore_b_rotated",
+    design_name="livermore_b_5over4",
     port_positions=ngon_pattern(6, 3, 28.4 / 7.14, theta_init=np.pi/12), 
-    core_radius_um=core_radii_livermore_b, cladding_radius_um=65.0/7.14,z_extent_um=10_000, scale=7.14,
+    core_radius_um=core_radii_livermore_b, cladding_radius_um=65.0*5/4/7.14,z_extent_um=10_000, scale=7.14,
     n_clad=n_clad, n_core=n_core, n_jacket=n_jacket, 
     wavelengths_um=[0.633],
     simulation_params = {
 		"name" : "lightbeam",
-		"mesh_extent_um" : 150,
+		"mesh_extent_um" : 175,
 		"mesh_spacing_um" : 0.2,
 		"dz_um" : 25,
 		"PML" : 8

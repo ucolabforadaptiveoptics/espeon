@@ -1,2 +1,4 @@
+-r requirements.txt
+numpy<2.4
 lightbeam @ git+https://github.com/aditya-sengupta/lightbeam@2eae558
 numba

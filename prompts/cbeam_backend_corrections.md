@@ -1,0 +1,5 @@
+- lightbeam sim parameters don't make sense to include in cbeam, cut those out and include any optional kwargs that go into the cbeam call
+- instead of finding the port ordering empirically through linear sum assignment, identify the rule that links the two conventions together since this must be deterministic
+- the number of input modes and ports may mismatch sometimes, don't fail in that case and generally only raise errors where essential. In particular transfer matrices may be non-square
+- Don't store the lp l, m, sin as separate fields, it makes no sense to access only one of those at a time
+- hcipy has its own function to calculate LP modes, use that instead of the lightbeam one

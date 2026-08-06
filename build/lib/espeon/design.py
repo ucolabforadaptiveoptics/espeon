@@ -157,30 +157,43 @@ def save_lantern_design(
 	# setup for lightbeam
 	PML = simulation_params["PML"]
 	pl_output = []
+	total_power = []
 	for wavelength_um in wavelengths_um:
 		lbprop, input_footprint, extent, launch_fields = setup_lantern(
 			port_positions, core_radius_um, cladding_radius_um, z_extent_um, scale, n_clad, n_core, n_jacket, wavelength_um, simulation_params
 		)
+
+		xg = lbprop.mesh.xg
+		out_start, out_end = np.zeros_like(xg), np.zeros_like(xg)
+		fig, axs = plt.subplots(1, 2, figsize=(8, 4))
+		lbprop.optical_system.set_IORsq(out_start, 0)
+		axs[0].imshow(out_start, vmin=n_jacket**2, vmax=n_core**2)
+		lbprop.optical_system.set_IORsq(out_end, z_extent_um)
+		axs[1].imshow(out_end, vmin=n_jacket**2, vmax=n_core**2)
+		plt.show()
+
 		pl_output_this_wl = []
+		total_power_this_wl = []
 		# the backwards beam-propagation runs
 		for (i, lf) in enumerate(launch_fields):
 			print(f"Illuminating core {i}")
-			if do_plot:
-				plt.imshow(np.abs(lf) ** 2)
-				plt.show()
-			u = lbprop.prop2end(lf)[PML:-PML,PML:-PML] # this step takes ~minutes
+			u, final_totalpower = lbprop.prop2end(lf) # this step takes ~minutes
+			u = u[PML:-PML,PML:-PML]
 			u = u[input_footprint]
 			u /= np.linalg.norm(u)
 			pl_output_this_wl.append(u)
+			total_power_this_wl.append(final_totalpower)
 			if do_plot:
 				output_intensity = np.abs(input_to_2d(u, input_footprint, extent)) ** 2
 				plt.imshow(output_intensity)
 				plt.show()
 		pl_output.append(pl_output_this_wl)
+		total_power.append(total_power_this_wl)
 
 	# write output to hdf5
 	with h5py.File(filepath, "w") as f:
 		pl_output_dset = f.create_dataset("pl_output", data=pl_output)
+		total_power_dset = f.create_dataset("total_power", data=total_power)
 		for k in ["design_name", "port_positions", "core_radius_um", "cladding_radius_um", "z_extent_um", "scale", "n_core", "n_clad", "n_jacket"]:
 			pl_output_dset.attrs[k] = eval(k)
 		for k in simulation_params:
